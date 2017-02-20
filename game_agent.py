@@ -7,7 +7,9 @@ You must test your agent's strength against a set of agents with known
 relative strength using tournament.py and include the results in your report.
 """
 import random
-
+import isolation 
+import numpy as np
+import sys
 
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
@@ -36,9 +38,10 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-
+	#number of my moves minus number of opponent moves for now
+    return len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player)))
     # TODO: finish this function!
-    raise NotImplementedError
+    #raise NotImplementedError
 
 
 class CustomPlayer:
@@ -129,15 +132,29 @@ class CustomPlayer:
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            pass
+            if not len(legal_moves):
+                return (-1, -1)
+            
+            if(self.method == 'alphabeta'):
+                raise("Alphabeta prunning Not yet implemented Yet")
+            if not self.iterative and self.method == 'minimax':
+                score, best_move = self.minimax(game, self.search_depth, maximizing_player = True) 
+            if self.iterative and self.method == 'minimax': 
+                for depth in range(1, len(game.get_blank_spaces()))+1:
+                    score, best_move = self.minimax(game, self.search_depth, maximizing_player = True)
+                return best_move
+                          
 
         except Timeout:
             # Handle any actions required at timeout, if necessary
-            pass
+            if not self.iterative:
+                sys.exit( 'time ran out while performing fixed depth search. Reduce the search depth next time' )
+            else:
+                return best_move
 
         # Return the best move from the last completed search iteration
         raise NotImplementedError
-
+	         
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
 
@@ -171,7 +188,36 @@ class CustomPlayer:
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
+        assert( depth >=1 )
+        legal_moves = game.get_legal_moves()
 
+        if maximizing_player:
+            max_score = -np.inf
+            for move in legal_moves:
+                next_game_state = self.forecast_move(move)
+                if depth == 1:
+                    best_next_score = custom_score(next_game_state, game.active_player)
+                else:
+            	    best_next_score, best_next_move = minimax(next_game_state, depth-1, maximizing_player = False)
+                if best_next_score > max_score:
+                    best_move = move
+                    max_score = best_next_score
+            return max_score, best_move
+                    
+        else:
+            min_score = np.inf
+            for move in legal_moves:
+                next_game_state = self.forecast_move(move)
+                if depth == 1:
+                    best_next_score = -custom_score(next_game_state, game.active_player)   #minus sign here since other player is trying to minimize utility function
+                else:
+            	    best_next_score, best_next_move = minimax(next_game_state_state, depth-1, maximizing_player = True)
+                if best_next_score < min_score:
+                    best_move = move
+                    min_score = best_next_score
+            return min_score, best_move
+            	
+            	                
         # TODO: finish this function!
         raise NotImplementedError
 
