@@ -135,13 +135,17 @@ class CustomPlayer:
             if not len(legal_moves):
                 return (-1, -1)
             
-            if(self.method == 'alphabeta'):
-                raise("Alphabeta prunning Not yet implemented Yet")
+            if not self.iterative and self.method == 'alphabeta':
+                score, best_move = self.alphabeta(game, self.search_depth, maximizing_player = True)
+            if self.iterative and self.method == 'alphabeta': 
+                for depth in range(1, len(game.get_blank_spaces()))+1:
+                    score, best_move = self.alphabeta(game, depth, maximizing_player = True)
+                return best_move 
             if not self.iterative and self.method == 'minimax':
                 score, best_move = self.minimax(game, self.search_depth, maximizing_player = True) 
             if self.iterative and self.method == 'minimax': 
                 for depth in range(1, len(game.get_blank_spaces()))+1:
-                    score, best_move = self.minimax(game, self.search_depth, maximizing_player = True)
+                    score, best_move = self.minimax(game, depth, maximizing_player = True)
                 return best_move
                           
 
@@ -193,12 +197,14 @@ class CustomPlayer:
 
         if maximizing_player:
             max_score = -np.inf
+            if not legal_moves:
+            	return max_score, (-1, -1) #return value for a state that leads to loss for computer player
             for move in legal_moves:
-                next_game_state = self.forecast_move(move)
+                next_game_state = game.forecast_move(move)
                 if depth == 1:
-                    best_next_score = custom_score(next_game_state, game.active_player)
+                    best_next_score = self.score(next_game_state, game.active_player)
                 else:
-            	    best_next_score, best_next_move = minimax(next_game_state, depth-1, maximizing_player = False)
+            	    best_next_score, best_next_move = self.minimax(next_game_state, depth-1, maximizing_player = False)
                 if best_next_score > max_score:
                     best_move = move
                     max_score = best_next_score
@@ -206,12 +212,14 @@ class CustomPlayer:
                     
         else:
             min_score = np.inf
+            if not legal_moves:
+                return min_score, (-1, -1) #return value for a state that leads to a loss for opponent
             for move in legal_moves:
                 next_game_state = self.forecast_move(move)
                 if depth == 1:
-                    best_next_score = -custom_score(next_game_state, game.active_player)   #minus sign here since other player is trying to minimize utility function
+                    best_next_score = -self.score(next_game_state, game.active_player)   #minus sign here since other player is trying to minimize utility function
                 else:
-            	    best_next_score, best_next_move = minimax(next_game_state_state, depth-1, maximizing_player = True)
+            	    best_next_score, best_next_move = self.minimax(next_game_state_state, depth-1, maximizing_player = True)
                 if best_next_score < min_score:
                     best_move = move
                     min_score = best_next_score
@@ -261,6 +269,48 @@ class CustomPlayer:
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
+            
+        assert( depth >=1 )
+        legal_moves = game.get_legal_moves()
 
+        if maximizing_player:
+            max_score = -np.inf
+            if not legal_moves:
+            	return max_score, (-1, -1) #return value for a state that leads to loss for computer player
+            for move in legal_moves:
+                next_game_state = game.forecast_move(move)
+                if depth == 1:
+                    best_next_score = self.score(next_game_state, game.active_player)
+                else:
+            	    best_next_score, best_next_move = self.alphabeta(next_game_state, depth-1, alpha = alpha, beta = beta, maximizing_player = False)
+                if best_next_score > beta:
+            	    return best_next_score, move
+                if best_next_score > max_score:
+                    best_move = move
+                    max_score = best_next_score
+                alpha = max_score
+            return max_score, best_move
+                    
+        else:
+            min_score = np.inf
+            if not legal_moves:
+                return min_score, (-1, -1) #return value for a state that leads to a loss for opponent
+            for move in legal_moves:
+                next_game_state = self.forecast_move(move)
+                if depth == 1:
+                    best_next_score = -self.score(next_game_state, game.active_player)   #minus sign here since other player is trying to minimize utility function
+                else:
+            	    best_next_score, best_next_move = self.alphabeta(next_game_state_state, depth-1, alpha = alpha, beta = beta, maximizing_player = True)
+                if best_next_score < alpha:
+            	    return best_next_score, move
+                if best_next_score < min_score:
+                    best_move = move
+                    min_score = best_next_score
+                beta = min_score
+            return min_score, best_move
         # TODO: finish this function!
         raise NotImplementedError
+    
+    def score(self, game, player):
+        return custom_score(game, player)
+       
