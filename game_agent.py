@@ -81,7 +81,6 @@ def custom_score2(game, player):
 	    my_opp_score += game.get_move_weight2(move, my_opp_moves)
     return float(my_moves_score - my_opp_score)
 
-    
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
