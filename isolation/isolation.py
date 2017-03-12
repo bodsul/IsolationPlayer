@@ -298,6 +298,12 @@ class Board(object):
             out += '\n\r'
 
         return out
+    
+    def get_move_weight(self, move, legal_moves):
+        return len(list(set(self.__get_moves__(move)) & set(legal_moves)))
+    
+    def get_move_weight2(self, move):
+        return len(self.__get_moves__(move))
 
     def play(self, time_limit=TIME_LIMIT_MILLIS):
         """
@@ -349,3 +355,5 @@ class Board(object):
                 return self.__inactive_player__, move_history, "illegal move"
 
             self.apply_move(curr_move)
+            
+            

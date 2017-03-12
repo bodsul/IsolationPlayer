@@ -15,7 +15,73 @@ class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
 
+def custom_score1(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player.
 
+    Note: this function should be called from within a Player instance as
+    `self.score()` -- you should not need to call this function directly.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+	#wieghted difference of my moves minus number of opponent moves for now
+    my_moves = game.get_legal_moves(player)
+    my_moves_score = 0
+    for move in my_moves:
+	    my_moves_score += game.get_move_weight(move, my_moves)
+    my_opp_moves = game.get_legal_moves(game.get_opponent(player))
+    my_opp_score = 0
+    for move in my_opp_moves:
+	    my_opp_score += game.get_move_weight(move, my_opp_moves)
+    return float(my_moves_score - my_opp_score)
+
+def custom_score2(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player.
+
+    Note: this function should be called from within a Player instance as
+    `self.score()` -- you should not need to call this function directly.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+	#wieghted difference of my moves minus number of opponent moves for now
+    my_moves = game.get_legal_moves(player)
+    my_moves_score = 0
+    for move in my_moves:
+	    my_moves_score += game.get_move_weight2(move, my_moves)
+    my_opp_moves = game.get_legal_moves(game.get_opponent(player))
+    my_opp_score = 0
+    for move in my_opp_moves:
+	    my_opp_score += game.get_move_weight2(move, my_opp_moves)
+    return float(my_moves_score - my_opp_score)
+
+    
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -38,11 +104,19 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-	#number of my moves minus number of opponent moves for now
-    return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player))))
-    # TODO: finish this function!
-    #raise NotImplementedError
+	#wieghted difference of my moves minus number of opponent moves for now
+    my_moves = game.get_legal_moves(player)
+    my_moves_after = []
+    for move in my_moves:
+    	my_moves_after.extend(game.__get_moves__(move))
+    my_moves_after = list(set(my_moves_after))
+    my_opp_moves = game.get_legal_moves(game.get_opponent(player))
 
+    my_opp_moves_after = []
+    for move in my_opp_moves:
+    	my_opp_moves_after.extend(game.__get_moves__(move))
+
+    return float(len(my_moves_after) - len(my_opp_moves_after))
 
 class CustomPlayer:
     """Game-playing agent that chooses a move using your evaluation function
@@ -153,11 +227,9 @@ class CustomPlayer:
             if not self.iterative:
                 sys.exit( 'time ran out while performing fixed depth search. Reduce the search depth next time' )
             else:
+             # Return the best move from the last completed search iteration
                 return best_move
 
-        # Return the best move from the last completed search iteration
-        raise NotImplementedError
-	         
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
 
@@ -204,7 +276,7 @@ class CustomPlayer:
                     best_next_score = self.score(next_game_state, game.active_player)
                 else:
             	    best_next_score, best_next_move = self.minimax(next_game_state, depth-1, maximizing_player = False)
-                if best_next_score > max_score:
+                if best_next_score >= max_score:
                     best_move = move
                     max_score = best_next_score
             return max_score, best_move
@@ -220,14 +292,10 @@ class CustomPlayer:
                     best_next_score = self.score(next_game_state, next_game_state.active_player)   
                 else:
             	    best_next_score, best_next_move = self.minimax(next_game_state, depth-1, maximizing_player = True)
-                if best_next_score < min_score:
+                if best_next_score <= min_score:
                     best_move = move
                     min_score = best_next_score
             return min_score, best_move
-            	
-            	                
-        # TODO: finish this function!
-        raise NotImplementedError
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -285,7 +353,7 @@ class CustomPlayer:
             	    best_next_score, best_next_move = self.alphabeta(next_game_state, depth-1, alpha = alpha, beta = beta, maximizing_player = False)
                 if best_next_score >= beta:
             	    return best_next_score, move
-                if best_next_score > max_score:
+                if best_next_score >= max_score:
                     best_move = move
                     max_score = best_next_score
                 alpha = max_score
@@ -304,13 +372,12 @@ class CustomPlayer:
             	    best_next_score, best_next_move = self.alphabeta(next_game_state, depth-1, alpha = alpha, beta = beta, maximizing_player = True)
                 if best_next_score <= alpha:
             	    return best_next_score, move
-                if best_next_score < min_score:
+                if best_next_score <= min_score:
                     best_move = move
                     min_score = best_next_score
                 beta = min_score
             return min_score, best_move
-        # TODO: finish this function!
-        raise NotImplementedError
+
     
     def score(self, game, player):
         return custom_score(game, player)
